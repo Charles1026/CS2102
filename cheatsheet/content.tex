@@ -59,7 +59,7 @@
     \item \texttt{ON} conditions in \texttt{OUTER JOIN} are not the same as in \texttt{INNER JOIN} or \texttt{WHERE} as non matches on the left/right/both sides are also included.
 \end{itemize}
 
-\noindent\textbf{Set Operations}: \texttt{UNION,INTERSECT \& EXCEPT} remove duplicates and only work on \underline{union-compatible} queries(same no. of columns, domain, and order). Except adds expressiveness.\\
+\noindent\textbf{Set Operations}: \texttt{UNION,INTERSECT \& EXCEPT} remove duplicates and only work on \underline{union-compatible} queries(same no. of columns, domain, and order). Adding \texttt{ALL} behind the operators prevents the removal of duplicates. Except adds expressiveness.\\
 
 \subsubsection{Entity Relationship Diagrams}
 \begin{tikzpicture}
@@ -194,7 +194,7 @@ Return type can be table name if return table record.  \texttt{RECORD} and multi
 \subsubsection{Triggers}
 \texttt{CREATE [CONSTRAINT] TRIGGER <name> BEFORE/INSTEAD OF/AFTER INSERT/UPDATE[ OF <col>]/DELETE ON <table> [DEFFERABLE INITTIALLY DEFERRED/IMMEDIATE] FOR EACH ROW[ WHEN <condition>]/STATEMENT EXECUTE FUNCTION <trigger func>;}
 Trigger function has no params and returns type \texttt{TRIGGER}.\\
-\textbf{Row} level triggers have access to \texttt{OLD} and/or \texttt{NEW} variables, the row before/after the operation, based on which operation is performed.\\
+\textbf{Row} level triggers have access to \texttt{OLD} and/or \texttt{NEW} variables, the row before/after the operation, based on which operation is performed. Trying to access \texttt{OLD} or \texttt{NEW} in a statement level trigger will result in an error. \\
 Return \texttt{NULL} on \textbf{Before Row} level triggers, use \texttt{RAISE EXCEPTION} on \textbf{After Row} and \textbf{Statement} level triggers to abort the transaction.\\
 \texttt{INSTEAD OF} triggers on non aggregate views can transfer a \textbf{Row} level operation directly to the underlying table. \\
 \texttt{WHEN} cannot use subquery, not be used with \texttt{INSTEAD OF} and access invalid \texttt{NEW}/\texttt{OLD} variables.\\
@@ -246,9 +246,19 @@ BCNF if every DNT FD is on a superkey. No dependencies on non-superkeys.\\
     \item   Split table into $S_1=\{X\}^+$ \& $S_2=\{X, $$R-\{X\}^+\}$.
     \item  Recurse if $S_1$ or $S_2$ is not BCNF. 2 attr table is always BCNF.
 \end{enumerate}
-Find closure of sub table $R_1$ by deriving closures of subsets of $R_1$ on $R$ and projecting onto $R_1$ by removing irrelevant attributes. \\
+\underline{Project FDs to compute sub-table closure}
+\begin{enumerate}[leftmargin=*]
+    \item Derive closures of every attribute subset of $S_1$/$S_2$ on $S$.
+    \item Remove attributes on the RHS that are not in $S_1$/$S_2$.
+\end{enumerate}
 Multiple BCNF decompositions may exist.\\
-BCNF keeps \textbf{Binary Lossless-Join Decomposition}, original table can always be reconstructed from the decomposed tables.\\
+\textbf{Lossless-Join Decomposition}(LJD) allows the original table to be reconstructed from the decomposed tables without data loss. \underline{Criteria}:
+\begin{enumerate}[leftmargin=*]
+    \item $R1\cup R2=R$
+    \item $R1\cap R2\neq \varnothing$
+    \item $R1\cap R2$ is a candidate key for at least 1 of $R1$ or $R2$. 
+\end{enumerate}
+Decomposition algorithm above maintains \textbf{Binary LJD}.\\
 However, FDs that are split into separate tables are not preserved.\\
 FDs are \underline{preserved} if every FD in the original table(S) can be derived from FDs in the decomposed table(S') and vice versa. aka S is \underline{equivalent} to S'.\\
 
@@ -269,8 +279,8 @@ A \underline{minimal basis/cover}(MB) of S is:
 \underline{Find minimal basis of S}:
 \begin{enumerate}[leftmargin=*]
     \item Decompose FDs so RHS only has 1 attribute.
-    \item Remove redundant attributes on LHS of FDs.
-    \item Remove redundant FDs.
+    \item Remove redundant attributes on LHS of FDs, aka the reduced LHS is implied by existing relations, aka does the cover of the reduced LHS include the RHS.
+    \item Remove redundant FDs. The cover of the remaining FDs covers the redundant FD.
 \end{enumerate}
 \underline{Decompose S into 3NF}:
 \begin{enumerate}[leftmargin=*]
@@ -280,6 +290,6 @@ A \underline{minimal basis/cover}(MB) of S is:
     \item If no table contains a key of S, create a new table with a key of S.
     \item Remove subsumed tables, a table that is a subset of another.
 \end{enumerate}
-Step 4 is needed to ensure \textbf{Losslesss Join Decomposition}.
+Step 4 is needed to ensure \textbf{LJD}.
 
 \end{multicols*}
