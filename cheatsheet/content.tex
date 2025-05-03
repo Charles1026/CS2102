@@ -1,0 +1,295 @@
+\begin{multicols*}{3}
+\setlength{\premulticols}{1pt}
+\setlength{\postmulticols}{1pt}
+\setlength{\multicolsep}{1pt}
+\setlength{\columnsep}{2pt}
+
+\subsection{SQL Syntax}
+\subsubsection{Top Level Queries}
+\texttt{CREATE TABLE <table name>(<col name> <datatype> [row constraints], <table constraints>);}
+\begin{itemize}[leftmargin=*]
+    \item  Constraints can be \texttt{NOT NULL}, \texttt{PRIMARY KEY [AUTOINCREMENT]}, \texttt{UNIQUE}, \texttt{FOREIGN KEY ON <other table>(other col)}, \texttt{ CHECK <constraint>}
+    \item  A primary key is a tuple of columns, non of which are \texttt{NULL} and uniquely identifies a row in the table.
+    \item  A foreign key is a tuple of columns that reference a primary key in another table. If a value in the foreign key is \texttt{NULL}, the check is omitted.
+    \item  \texttt{ON UPDATE/DELETE CASCADE/NO ACTION/SET DEFAULT/SET NULL} used to handle foreign keys.\\
+\end{itemize}
+
+\noindent\texttt{SELECT [DISTINCT] <columns> [AS <renamed column>] FROM <TABLE> WHERE <filter condition> GROUP BY <group condition> HAVING <group filter condition> ORDER BY [<columns> [ASC/DESC]]+ LIMIT <return limit>;}
+\begin{itemize}[leftmargin=*]
+    \item \texttt{DISTINCT} returns unique tuples of selected columns by removing subsequent duplicate rows. 
+    \item \texttt{ORDER BY} sorts iteratively from the first given column. 
+    \item \texttt{DISTINCT} and \texttt{ORDER BY} may not work together if the \texttt{ORDER BY} column is not in the selected columns as \texttt{DISTINCT} would not know which duplicate rows to remove.
+    \item  If using \texttt{GROUP BY}, only values columns that are constant within each group can be selected.
+    \item \texttt{EXTRACT(part FROM date)} can be used to retrieve specific components like month/minute from datetime types.\\
+\end{itemize}
+
+\noindent\texttt{INSERT INTO <table name> (<columns>) VALUES (<values>);} 
+\begin{itemize}[leftmargin=*]
+    \item \texttt{(<columns>)} can be omitted if inserting into every table column.
+    \item Omitted columns are filled with \texttt{NULL} by default.\\
+\end{itemize}
+
+\noindent\texttt{UPDATE <table name> SET [<column> = <value>]+ WHERE <condition>;}\\
+
+\noindent\texttt{DELETE FROM <table name> WHERE <condition>;}
+\begin{itemize}[leftmargin=*]
+    \item Omit where clause if deleting everything. \\
+\end{itemize}
+
+\noindent\textbf{Common Types}: INT, CHAR(1-255), NUMERIC, TEXT, VARCHAR(1-225)\\
+\textbf{Operators} can be arithmetic, \texttt{||} is concatenation, \texttt{AS} is renaming, \texttt{CASE..WHEN..THEN..ELSE..END} is a conditional. Any operation on \texttt{NULL} results in \texttt{NULL}. \\
+\textbf{Conditions} can be checked with \texttt{=,<,>,<=,>=,<>,IN,LIKE,BETWEEN ..AND.., IS [NOT] NULL} and joined with \texttt{AND,OR,NOT}. \\
+
+\noindent A \textbf{Transaction} is a ordered list of operations that all commit or rollback. Constraint checks can be deferred to the end of a transaction.\\
+
+\noindent A database is in a \textbf{consistent state} when it complies with \textbf{Integrity \& Structural Constraints}.\\
+\textbf{Integrity Constraints} ensure data is of valid types and all conditions, inter and intra column, are satisfied. \\
+
+\subsubsection{Aggregate and Algebraic Queries}
+\textbf{Groups}: Logical groups of records with the same value for the specified fields. \texttt{HAVING} can only use aggregate functions or columns used for \texttt{GROUP BY}. \\
+\textbf{Aggregate Operators} like \texttt{COUNT, SUM, MIN, MAX, AVG, STDDEV, ...} return a 1 value summary per \texttt{GROUP} for 1 column. \texttt{COUNT(*)} includes \texttt{NULL} values but all other operators ignore them. \texttt{(ALL ...)} is the default keyword but \texttt{DISTINCT} can also be used.\\
+
+\noindent\textbf{Joins}: \texttt{t1 <join type> t2 [ON <conditions>]}. 
+\begin{itemize}[leftmargin=*]
+    \item              Usually join foreign keys to primary keys.
+    \item \texttt{CROSS JOIN}: Cartesian product, all possible combinations of rows, no conditions required. Filter with the \texttt{WHERE} clause. Can also be written as \texttt{FROM t1, t2}.
+    \item  \texttt{[INNER] JOIN}: Joins all rows where the condition is satisfied. No add expressiveness compared to \texttt{CROSS JOIN}, less preferred  as harder to read and less optimizable.
+    \item \texttt{NATURAL JOIN}: Joins columns with the same name on the same values. No need for conditions
+    \item \texttt{LEFT/RIGHT/FULL [OUTER] JOIN}: \texttt{INNER JOIN} and all values of the on the left/right/both sides with no matches on the other side which is padded with \texttt{NULL} values. Adds expressiveness. Can use \texttt{NATURAL} to join based on same column name condition.
+    \item \texttt{ON} conditions in \texttt{OUTER JOIN} are not the same as in \texttt{INNER JOIN} or \texttt{WHERE} as non matches on the left/right/both sides are also included.
+\end{itemize}
+
+\noindent\textbf{Set Operations}: \texttt{UNION,INTERSECT \& EXCEPT} remove duplicates and only work on \underline{union-compatible} queries(same no. of columns, domain, and order). Adding \texttt{ALL} behind the operators prevents the removal of duplicates. Except adds expressiveness.\\
+
+\subsubsection{Entity Relationship Diagrams}
+\begin{tikzpicture}
+    \node[entity] (ent) at (0,0){Entity};
+    \node[relationship,aspect=3] (rel) at (2.5,0) {Relationship};
+    % Aggregation
+    \draw (4,-0.4) rectangle (6,0.4);
+    \draw (4,0.0) -- (5,0.4) -- (6,0.0) -- (5,-0.4) -- cycle;
+    \node[] at (5, 0) {Aggregation}
+
+    % Attribute
+    \coordinate (C) at (7,0);
+    \draw (C) circle (0.1cm);
+    \draw[shift=(C)] (0:0.1cm) -- (0:0.6cm);
+    \node[] at ($(C)+(0.15,-0.3)$) {Attribute};
+\end{tikzpicture}
+ER diagrams are value oriented.\\
+\textbf{Entities} can take on attributes. All entities in the same set have the same attributes but can have different values. Entities are identified by their values.\\
+\textbf{Relationships} associate 2 or more entities from 1 or more sets. Relationship can have attributes but are identified by the participating entities. A relationhship linking $>2$ entity sets is a n-ary relation.\\
+\textbf{Aggregations} are relations that are also entities of other relations.\\
+\begin{tikzpicture}
+    % Single Key
+    \coordinate (C1) at (0,0);
+    \fill[black] (C1) circle (0.1cm);
+    \draw[shift=(C1)] (0:0.1cm) -- (0:0.6cm);
+    \node[] at ($(C1)+(0.15,-0.3)$) {1 Attr Key};
+
+    % Multi Key
+    \coordinate (C2) at (2,0.3);
+    \coordinate (C3) at ($(C2) + (0.5, 0)$);
+    \coordinate (C4) at ($(C2) + (0, -0.3)$);
+    \coordinate (C5) at ($(C3) + (0, -0.3)$);
+    \fill[black] (C2) circle (0.1cm);
+    \fill[black] (C3) circle (0.1cm);
+    \draw (C4) circle (0.1cm);
+    \draw (C5) circle (0.1cm);
+    \draw ($(C2) + (0:0.1cm)$) -- ($(C3) + (180:0.1cm)$);
+    \draw ($(C2) + (270:0.1cm)$) -- ($(C4) + (90:0.1cm)$);
+    \draw ($(C3) + (270:0.1cm)$) -- ($(C5) + (90:0.1cm)$);
+    \node[] at ($(C2)+(0.25,-0.6)$) {Multi Attr Key};
+
+    % Partial Key
+    \coordinate (C6) at (4,0);
+    \coordinate (C7) at ($(C6) + (0.3, 0)$);
+    \coordinate (E1) at ($(C7) + (0.7, 0)$);
+    \coordinate (R1) at ($(E1) + (1, 0)$);
+    \coordinate (C8) at ($(R1) + (0.5, 0)$);
+    \coordinate (E2) at ($(C8) + (0.7, 0)$);
+
+    % Draw shapes
+    \draw (C6) circle (0.1cm);
+    \fill[black] (C7) circle (0.1cm);
+    \node[draw, rectangle, minimum width=0.8cm, minimum height=0.4cm] at (E1) {E1};
+    \node[draw, diamond, aspect=2] at (R1);
+    \fill[black] (C8) circle (0.1cm);
+    \node[draw, rectangle, minimum width=0.8cm, minimum height=0.4cm] at (E2) {E2};
+
+    % Connect lines
+    \draw ($(C6) + (0:0.1cm)$) -- ($(C7) + (180:0.1cm)$);
+    \draw ($(C7) + (0:0.1cm)$) -- ($(E1) + (-0.4cm, 0)$);
+    \draw ($(E1) + (0.4cm, 0)$) -- ($(R1) + (-0.3cm, 0)$);
+    \draw ($(R1) + (0.3cm, 0)$) -- ($(E2) + (-0.4cm, 0)$);
+    \draw (C7) -- ($(C7) + (0, 0.3)$) -- ($(C8) + (0, 0.3)$) -- (C8);
+
+    %Label
+    \node[] at ($(E1)+(0.7, -0.3)$) {Partial Key}
+\end{tikzpicture}
+\\A Key uniquely identifies an entity within its set.\\
+A Partial Key identifies an entity within the scope a relationship with another set: E1 Weak to E2(Dominant).\\
+\begin{tikzpicture}
+    \coordinate (E1) at (0, 0);
+    \coordinate (R1) at ($(E1) + (1, 0)$);
+    \coordinate (E2) at ($(R1) + (1, 0)$);
+    \node[draw, rectangle, minimum width=0.8cm, minimum height=0.4cm] at (E1) {E1};
+    \node[draw, diamond, aspect=2] at (R1);
+    \node[draw, rectangle, minimum width=0.8cm, minimum height=0.4cm] at (E2) {E2};
+    \draw ($(E1) + (0.4cm, 0)$) -- ($(R1) + (-0.3cm, 0)$);
+    \draw ($(R1) + (0.3cm, 0)$) -- ($(E2) + (-0.4cm, 0)$);
+    \node[font=\scriptsize] at ($(E1)+(0.65, 0.2)$) {C1};
+    \node[font=\scriptsize] at ($(E2)+(-0.65, 0.2)$) {C2};
+\end{tikzpicture}
+C1 indicates E1's cardinality with E2 and C2 indicates E2's cardinality with E1 in the context of the relationship.\\
+Cardinality is written as (min participation, max participation).\\
+(1, x) mandatory part; (0, x) optional part; (x, 1) one-to-one or one-to-many; (x, n) many to many.\\
+Weak entities must have (1, 1) cardinality with their dominant entity.
+\underline{ER to Schema Translation Rules}:
+\begin{enumerate}[leftmargin=*]
+    \item Map value sets to meaningful domains.
+    \item Map entity sets to relations, with candidate keys set to primary key or unique not null.
+    \item Map relationship sets to relations, with the keys being the keys of participating entities
+\end{enumerate}
+\underline{ER to Schema Translation Exceptions}:
+\begin{enumerate}[leftmargin=*]
+    \item One-to-many relation sets should have the primary key be made up of  just the One side to enforce (x, 1) cardinality.
+    \item  (1, 1) cardinality entity tables should be merged with the relation tables to enforce mandatory participation.
+    \item Weak entity sets should be merged as in 2., and the dominant set's key should be included in the primary key of the weak set to uniquely identify rows.\\
+\end{enumerate}
+
+\subsubsection{Nested Queries}
+\textbf{Table Copies}: \texttt{CREATE [TEMPORARY] <copy name> AS SELECT...} Temporary tables last until the end of the database session. Changes in the copy do not update the base table and vice versa.\\
+\textbf{Views}: \texttt{CREATE VIEW <view name> AS SELECT...} Unmaterialized and updates with base table changes.\\
+\textbf{Common Table Expression(CTE)}: \texttt{WITH <cte name> AS (subquery) SELECT...} Subquery only valid within the query.\\
+\textbf{From}: \texttt{SELECT ... FROM (subquery) AS <from table> ...}\\ 
+\textbf{Scalar Subquery}: \texttt{SELECT (subquery)} subquery can only return 1 column and 1 row.\\
+\textbf{In}: \texttt{WHERE ... IN (subquery)} checks for match in subquery.\\
+\textbf{Exists}: \texttt{WHERE ... EXISTS (subquery)} true if \texttt{|subquery| > 0}.\\
+\textbf{Any/All}: \texttt{WHERE ... <comparator> ANY/ALL (subquery)} returns true if comparison is true for any/all values in subquery. \texttt{IN} $\equiv$ \texttt{=ANY}. \texttt{ALL} adds expressiveness.\\
+\textbf{Correlated Subqueries} depend on the values of the outer query for their query. All subqueries can be correlated.\\
+\textbf{Lexical Scoping}: columns from outer table can be used in inner query but not vice versa.\\
+All checks above can be negated with \texttt{NOT} and also be used with aggregate functions in the \texttt{HAVING} clause.\\
+
+\subsubsection{Relational Algebra}
+\textbf{Selection}(filtering) $\sigma_{[cond]}(R)$ Conditions use $=,\neq,\lt,\gt,\leq,\geq,\land,\lor,\neg$; \\
+\textbf{Projection}(select column) $\pi_{[cols]}(R)$ or $\pi[R.col]$; \\
+\textbf{Renaming} $\rho(R1, R2(A1\rightarrow B1))$; \\
+\textbf{Union} $\cup$; \textbf{Intersection} $\cap$; \textbf{Set Difference} $-$; \\
+\textbf{Cross Product} $\times$; \textbf{Inner/Natural Join} $\bowtie$;\\
+\textbf{Outer Joins} $\leftouterjoin, \rightouterjoin, \fullouterjoin$; Assignment $:=$.
+
+\subsubsection{SQL From Code}
+SQL Execution from Code: Declare Statements and Arguments $\rightarrow$ Connect to Database $\rightarrow$ Execute Queries $\rightarrow$ Deallocate Resources.\\
+\textbf{Statement Level Interface}: Use preprocessor to parse embedded SQL statements  into executable code.\\
+\textbf{Prepared Statements} allow frequently used statements to be compiled by the database only once. Manual deallocation is required.\\
+\textbf{Call Level Interface}: Execute SQL statement strings via API calls.\\ 
+
+\subsubsection{Functions and Procedures}
+Procedure Languages allows implementation of complex logic, code reuse and easy maintenance.\\
+\textbf{Function}: \texttt{CREATE OR REPLACE FUNCTION <func name> ([<param> <type>]) RETURNS <type> AS \$\$ ... \$\$ LANGUAGE <language>}. Returns a value(\texttt{VOID} if nth) but is not a transaction.\\
+Return type can be table name if return table record.  \texttt{RECORD} and multiple \texttt{OUT} parameters or \texttt{TABLE([<name> <type>]+)} can be used for custom records. \texttt{SETOF} is used for multiple records. \\
+\textbf{Procedure}: \texttt{CREATE OR REPLACE PROCEDURE <proc name> ([IN/OUT <param> <type>]) AS \$\$ ... \$\$ LANGUAGE <language>}. No return value but can set an out parameter. Is a transaction that can be rolled back.\\
+
+\subsubsection{Triggers}
+\texttt{CREATE [CONSTRAINT] TRIGGER <name> BEFORE/INSTEAD OF/AFTER INSERT/UPDATE[ OF <col>]/DELETE ON <table> [DEFFERABLE INITTIALLY DEFERRED/IMMEDIATE] FOR EACH ROW[ WHEN <condition>]/STATEMENT EXECUTE FUNCTION <trigger func>;}
+Trigger function has no params and returns type \texttt{TRIGGER}.\\
+\textbf{Row} level triggers have access to \texttt{OLD} and/or \texttt{NEW} variables, the row before/after the operation, based on which operation is performed. Trying to access \texttt{OLD} or \texttt{NEW} in a statement level trigger will result in an error. \\
+Return \texttt{NULL} on \textbf{Before Row} level triggers, use \texttt{RAISE EXCEPTION} on \textbf{After Row} and \textbf{Statement} level triggers to abort the transaction.\\
+\texttt{INSTEAD OF} triggers on non aggregate views can transfer a \textbf{Row} level operation directly to the underlying table. \\
+\texttt{WHEN} cannot use subquery, not be used with \texttt{INSTEAD OF} and access invalid \texttt{NEW}/\texttt{OLD} variables.\\
+\textbf{Deferred Triggers}: defer constraint checks to the end of a transaction, only works on \texttt{CONSTRAINT TRIGGERS} with \texttt{DEFERRABLE INITTIALLY DEFERRED/IMMEDIATE} set. Set defer status in transaction with \texttt{SET CONSTRAINTS <trigger name> DEFERRED/IMMEDIATE;}\\
+\textbf{Order of Activation}: \texttt{BEFORE STATEMENT} $\rightarrow$ \texttt{BEFORE ROW} $\rightarrow$ \texttt{AFTER ROW} $\rightarrow$ \texttt{AFTER STATEMENT} $\rightarrow$ then alphabetic order. \texttt{NULL} on a \texttt{BEFORE ROW} trigger omits subsequent \texttt{BEFORE ROW} triggers.\\
+
+\subsubsection{PLPGSQL}
+\textbf{Structure}: \texttt{DECLARE <variable dec> BEGIN <logic> END;} \\
+\textbf{Assignment}: \texttt{<var> := <expression>;}
+\textbf{Selection}: \texttt{IF... THEN... ELSIF... THEN... ELSE... ENDIF}\\
+\textbf{Repetition}: \texttt{LOOP EXIT WHEN ... END LOOP}, \texttt{WHILE... / FOR <row> IN <query> LOOP ... END LOOP}. \texttt{RETURN NEXT} is used to yield the next value or record and \texttt{RETURN QUERY} the next record, followed by a final \texttt{RETURN} with no value when returning a set of values.\\
+\textbf{Cursor}: Allows access to each row of a \texttt{SELECT} statement.\\
+\texttt{DECLARE} cursor \texttt{<cursor> CURSOR FOR <query>;}\\
+\texttt{FETCH [PRIOR/ FIRST/ LAST/ABSOLUTE <num>] FROM <cursor> INTO <record>;}\\
+\texttt{EXIT WHEN NOT FOUND;} \texttt{CLOSE <cursor>;}\\
+
+\noindent\textbf{SQL Injection}: Attacks by using \texttt{;} or \texttt{--} to add or remove parts of the query to execute the attacker's query. Use prepared statements so user input is treated as a string and can't change the control flow.\\
+
+\subsubsection{Functional Dependencies(FD)}
+\textbf{Redundancies} can lead to \textbf{anomalies} if not all copies are changed.\\
+\textbf{Normalizing} tables reduces redundancies and anomalies.\\
+B is a FD on A ($A\rightarrow B$) $\Leftrightarrow$ A uniquely determines B.\\
+\textbf{Armstrong's Axioms}: \underline{Reflexivity}, subset is always FD on superset; \underline{Augmentation}, if $A\rightarrow B$ then $AC\rightarrow BC$; \underline{Transitivity}, $A\rightarrow B$ \& $B\rightarrow C$ $\Rightarrow$ $A\rightarrow C$.\\
+\textbf{Additional Rules}: \underline{Decomposition}, $A\rightarrow BC$ $\Rightarrow$ $A\rightarrow B$ \& $A\rightarrow C$; \underline{Union},  $A\rightarrow B$ \& $A\rightarrow C$ $\Rightarrow$ $A\rightarrow BC$.\\
+\textbf{Closure} of S, $\{S\}^+$, is all the attributes uniquely determined by S. Compute by iteratively adding FD's until no more.\\
+\textbf{Superkeys} decide(have closures of) all other attributes.\\
+\textbf{Keys} are minimal closures or superkeys, no subset that is also a key.\\
+If A is not FD on any other attribute, it must be in the key.\\
+\textbf{Prime attributes} appear in at least 1 key.\\ 
+\underline{Find keys of S}: 
+\begin{enumerate}[leftmargin=*]
+    \item Compute closures of all subsets of S .
+    \item Select superkeys with no subset that is a superkey.\\
+\end{enumerate}
+
+\subsubsection{Boyce-Codd Normal Form(BCNF)}
+For $A\rightarrow B$, \textbf{Trivial} FD if $B\subseteq A$; \textbf{Non-Trivial} FD if $B \cap A \neq \varnothing$ and $B \nsubseteq A$; \textbf{Completely/Decomposed Non-Trivial(DNT)} if $B \cap A = \varnothing$.\\
+To find DNT FDs: Find closures of all subsets, remove trivial attributes, then decompose FDs.\\
+BCNF if every DNT FD is on a superkey. No dependencies on non-superkeys.\\
+\underline{Check if S is in BCNF}: 
+\begin{enumerate}[leftmargin=*]
+    \item Derive keys and DNT FDs.
+    \item Check if every DNT FD is on a superkey.
+\end{enumerate}
+\underline{Optimized}: Check if a attribute subset has a more but not all closure.\\
+\underline{Decompose S into BCNF}: 
+\begin{enumerate}[leftmargin=*]
+    \item Identify a more but not all closure subset $X$ in $S$.
+    \item   Split table into $S_1=\{X\}^+$ \& $S_2=\{X, $$R-\{X\}^+\}$.
+    \item  Recurse if $S_1$ or $S_2$ is not BCNF. 2 attr table is always BCNF.
+\end{enumerate}
+\underline{Project FDs to compute sub-table closure}
+\begin{enumerate}[leftmargin=*]
+    \item Derive closures of every attribute subset of $S_1$/$S_2$ on $S$.
+    \item Remove attributes on the RHS that are not in $S_1$/$S_2$.
+\end{enumerate}
+Multiple BCNF decompositions may exist.\\
+\textbf{Lossless-Join Decomposition}(LJD) allows the original table to be reconstructed from the decomposed tables without data loss. \underline{Criteria}:
+\begin{enumerate}[leftmargin=*]
+    \item $R1\cup R2=R$
+    \item $R1\cap R2\neq \varnothing$
+    \item $R1\cap R2$ is a candidate key for at least 1 of $R1$ or $R2$. 
+\end{enumerate}
+Decomposition algorithm above maintains \textbf{Binary LJD}.\\
+However, FDs that are split into separate tables are not preserved.\\
+FDs are \underline{preserved} if every FD in the original table(S) can be derived from FDs in the decomposed table(S') and vice versa. aka S is \underline{equivalent} to S'.\\
+
+\subsubsection{3rd Normal Form(3NF)}
+3NF iff for every DNT FD, the LHS is a superkey or the RHS is a prime attribute. BCNF $\subset$ 3NF. 3NF preserves all FDs.\\
+\underline{Check if S is in 3NF}: 
+\begin{enumerate}[leftmargin=*]
+    \item Derive keys and DNT FDs of R.
+    \item For each DNT FD check if it satisfies above condition.
+\end{enumerate}
+A \underline{minimal basis/cover}(MB) of S is:
+\begin{enumerate}[leftmargin=*]
+    \item Every FD in MB can be derived from S.
+    \item Every FD in MB is DNT.
+    \item No FD in MB is redundant, can be derived from another FD.
+    \item LHS of every FD is not redundant, removing an attribute on the LHS results in a new FD that cannot be derived from original FDs.
+\end{enumerate}
+\underline{Find minimal basis of S}:
+\begin{enumerate}[leftmargin=*]
+    \item Decompose FDs so RHS only has 1 attribute.
+    \item Remove redundant attributes on LHS of FDs, aka the reduced LHS is implied by existing relations, aka does the cover of the reduced LHS include the RHS.
+    \item Remove redundant FDs. The cover of the remaining FDs covers the redundant FD.
+\end{enumerate}
+\underline{Decompose S into 3NF}:
+\begin{enumerate}[leftmargin=*]
+    \item Find a minimal basis of S.
+    \item Combine FDs with same LHS by Union Rule. 
+    \item Create a table for each remaining FD.
+    \item If no table contains a key of S, create a new table with a key of S.
+    \item Remove subsumed tables, a table that is a subset of another.
+\end{enumerate}
+Step 4 is needed to ensure \textbf{LJD}.
+
+\end{multicols*}
